@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "node backend/server.js",
+    "start": "node appointment-app/backend/server.js",
     "dev": "nodemon server.js"
   },
   "keywords": [],
