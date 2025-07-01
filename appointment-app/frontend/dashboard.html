@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Dashboard</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+
+      margin: 0;
+      padding: 2rem;
+      min-height: 100vh;
+      background: rgb(255, 252, 252);
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      color: black;
+      font-size: 1.5rem;
+    }
+
+    #logout-btn {
+      background: #ef4444;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    #logout-btn:hover {
+      background: #dc2626;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 800px;
+    }
+
+    th, td {
+      padding: 15px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background: black;
+      color: white;
+      font-weight: 700;
+    }
+
+    tr:hover {
+      background: #f3f4f6;
+    }
+
+    .status-approved {
+      color: #16a34a;
+      font-weight: 700;
+    }
+
+    .status-pending {
+      color: #ca8a04;
+      font-weight: 700;
+    }
+
+    .approve-btn {
+      background: black;
+      border: none;
+      padding: 7px 12px;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s ease;
+    }
+
+    .approve-btn:hover {
+      background: green;
+    }
+
+    #status-msg {
+      margin-top: 1rem;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    @media (max-width: 768px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      h1 {
+        font-size: 1.25rem;
+      }
+
+      #logout-btn {
+        padding: 8px 14px;
+        font-size: 0.9rem;
+      }
+
+      table {
+        font-size: 0.85rem;
+      }
+
+      th, td {
+        padding: 10px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 1rem;
+      }
+
+      table {
+        min-width: unset;
+      }
+
+      .approve-btn {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Admin Dashboard</h1>
+    <button id="logout-btn">Logout</button>
+  </header>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Category</th>
+          <th>Date</th>
+          <th>Message</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="appointments-body">
+        <!-- Appointments will be injected here -->
+      </tbody>
+    </table>
+  </div>
+
+  <p id="status-msg"></p>
+
+<script>
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('Please login first.');
+    window.location.href = 'login.html';
+  }
+
+  const appointmentsBody = document.getElementById('appointments-body');
+  const statusMsg = document.getElementById('status-msg');
+  const logoutBtn = document.getElementById('logout-btn');
+
+  logoutBtn.addEventListener('click', () => {
+    localStorage.removeItem('token');
+    alert('Logged out.');
+    window.location.href = 'login.html';
+  });
+
+  async function fetchAppointments() {
+    statusMsg.style.color = 'black';
+    statusMsg.textContent = 'Loading appointments...';
+
+    try {
+      const res = await fetch('http://localhost:3000/api/admin/appointments', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem('token');
+        alert('Session expired. Please login again.');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      const appointments = await res.json();
+      if (!res.ok) {
+        statusMsg.style.color = 'red';
+        statusMsg.textContent = appointments.message || 'Failed to load appointments.';
+        return;
+      }
+
+      statusMsg.textContent = '';
+      renderAppointments(appointments);
+    } catch {
+      statusMsg.style.color = 'red';
+      statusMsg.textContent = 'Server error. Please try again later.';
+    }
+  }
+
+  function renderAppointments(appointments) {
+    appointmentsBody.innerHTML = '';
+    if (appointments.length === 0) {
+      appointmentsBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">No appointments found.</td></tr>';
+      return;
+    }
+
+    appointments.forEach(apt => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${apt.name}</td>
+        <td>${apt.email}</td>
+        <td>${apt.phone}</td>
+        <td>${apt.category}</td>
+        <td>${new Date(apt.date).toLocaleDateString()}</td>
+        <td>${apt.message}</td>
+        <td class="${apt.approved ? 'status-approved' : 'status-pending'}">
+          ${apt.approved ? 'Approved' : 'Pending'}
+        </td>
+        <td>
+          ${!apt.approved
+            ? `<button class="approve-btn" data-id="${apt._id}">Approve</button>`
+            : '✔'
+          }
+        </td>
+      `;
+      appointmentsBody.appendChild(tr);
+    });
+
+    document.querySelectorAll('.approve-btn').forEach(btn => {
+      btn.addEventListener('click', async e => {
+        const id = e.target.getAttribute('data-id');
+        await approveAppointment(id, e.target);
+      });
+    });
+  }
+
+  async function approveAppointment(id, btnElement) {
+    statusMsg.style.color = 'black';
+    statusMsg.textContent = 'Approving appointment...';
+
+    try {
+      const res = await fetch(`http://localhost:3000/api/admin/approve/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'Bearer ' + token
+        }
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        statusMsg.style.color = 'red';
+        statusMsg.textContent = result.message || 'Approval failed.';
+        return;
+      }
+
+      // ✅ Update row UI instantly
+      const row = btnElement.closest('tr');
+      const statusCell = row.querySelector('td:nth-child(7)');
+      statusCell.textContent = 'Approved';
+      statusCell.classList.remove('status-pending');
+      statusCell.classList.add('status-approved');
+
+      const actionCell = row.querySelector('td:nth-child(8)');
+      actionCell.innerHTML = '✔';
+
+      statusMsg.style.color = 'green';
+      statusMsg.textContent = result.message || 'Appointment approved and notifications sent.';
+    } catch {
+      statusMsg.style.color = 'red';
+      statusMsg.textContent = 'Server error. Please try again later.';
+    }
+  }
+
+  fetchAppointments();
+</script>
+</body>
+</html>

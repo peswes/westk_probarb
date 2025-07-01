@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin Login</title>
+<style>
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: #f0f2f5;
+    margin: 0; padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+  .form-wrapper {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    max-width: 400px;
+    width: 100%;
+    animation: fadeInUp 0.8s ease forwards;
+  }
+  h2 {
+    margin-bottom: 1rem;
+    color: #111827;
+    font-weight: 700;
+    text-align: center;
+  }
+  input {
+    width: 100%;
+    padding: 12px 15px;
+    margin-top: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+  }
+  input:focus {
+    border-color: brown;
+    outline: none;
+  }
+  button {
+    margin-top: 20px;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    background: black;
+    color: white;
+    font-weight: 700;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  button:hover {
+    background: rgb(27, 27, 27);
+  }
+  #login-msg {
+    margin-top: 15px;
+    text-align: center;
+    font-weight: 600;
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px);}
+    to { opacity: 1; transform: translateY(0);}
+  }
+</style>
+</head>
+<body>
+  <div class="form-wrapper">
+    <h2>Admin Login</h2>
+    <form id="login-form">
+      <input type="text" name="username" placeholder="Username" required />
+      <input type="password" name="password" placeholder="Password" required />
+      <button type="submit">Login</button>
+    </form>
+    <p id="login-msg"></p>
+  </div>
+
+<script>
+  const form = document.getElementById('login-form');
+  const loginMsg = document.getElementById('login-msg');
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    loginMsg.textContent = '';
+
+    const data = Object.fromEntries(new FormData(form).entries());
+
+    try {
+      const res = await fetch('http://localhost:3000/api/admin/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+
+      if (res.ok) {
+        loginMsg.style.color = 'green';
+        loginMsg.textContent = 'Login successful! Redirecting...';
+        localStorage.setItem('token', result.token);
+        setTimeout(() => {
+          window.location.href = 'dashboard.html';
+        }, 1000);
+      } else {
+        loginMsg.style.color = 'red';
+        loginMsg.textContent = result.message || 'Login failed.';
+      }
+    } catch {
+      loginMsg.style.color = 'red';
+      loginMsg.textContent = 'Server error. Please try again later.';
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Make Appointment</title>
+<style>
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: url(../../assets/images/pexels-thgusstavo-2061820.jpg);
+    background-size: cover;
+    margin: 0; padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+  .form-wrapper {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    max-width: 450px;
+    width: 100%;
+    animation: fadeInUp 0.8s ease forwards;
+  }
+  h2 {
+    margin-bottom: 1rem;
+    color: #111827;
+    font-weight: 700;
+    text-align: center;
+  }
+  input, select, textarea {
+    width: 100%;
+    padding: 12px 15px;
+    margin-top: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: rgb(55, 55, 55);
+    outline: none;
+  }
+  button {
+    margin-top: 20px;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    background: black;
+    color: white;
+    font-weight: 700;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  button:hover {
+    background:  rgb(55, 55, 55);
+  }
+  #form-msg {
+    margin-top: 15px;
+    text-align: center;
+    font-weight: 600;
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px);}
+    to { opacity: 1; transform: translateY(0);}
+  }
+</style>
+</head>
+<body>
+  <div class="form-wrapper">
+    <h2>Make an Appointment</h2>
+    <form id="appointment-form">
+      <input type="text" name="name" placeholder="Full Name" required />
+      <input type="email" name="email_address" placeholder="Email Address" required />
+      <input type="text" name="phone" placeholder="Phone Number" required />
+      <select name="category" required>
+        <option value="" disabled selected>Select category</option>
+        <option value="Beauty & spa">Beauty & spa</option>
+        <option value="Body massage">Body massage</option>
+        <option value="Shaving & Facial">Shaving & Facial</option>
+        <option value="Hair Color">Hair Color</option>
+      </select>
+      <input type="date" name="date" required min="" />
+      <textarea name="message" rows="4" placeholder="Message" required></textarea>
+      <button type="submit">Book Appointment</button>
+    </form>
+    <p id="form-msg"></p>
+  </div>
+
+<script>
+  const dateInput = document.querySelector('input[name="date"]');
+  const today = new Date().toISOString().split('T')[0];
+  dateInput.min = today;
+
+  const form = document.getElementById('appointment-form');
+  const formMsg = document.getElementById('form-msg');
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    formMsg.textContent = '';
+
+    const data = Object.fromEntries(new FormData(form).entries());
+
+    // // Basic phone validation (digits and + allowed, length 7-15)
+    // if (!/^\+?\d{7,15}$/.test(data.phone)) {
+    //   formMsg.style.color = 'red';
+    //   formMsg.textContent = 'Please enter a valid phone number.';
+    //   return;
+    // }
+
+    try {
+      const res = await fetch('http://localhost:3000/api/appointment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const result = await res.json();
+
+      if (res.ok) {
+        formMsg.style.color = 'green';
+        formMsg.textContent = result.message || 'Appointment booked successfully! Ensure you check your emails and sms';
+        form.reset();
+      } else {
+        formMsg.style.color = 'red';
+        formMsg.textContent = result.message || 'Failed to book appointment.';
+      }
+    } catch (error) {
+      formMsg.style.color = 'red';
+      formMsg.textContent = 'Server error. Please try again later.';
+      console.error('Fetch error:', error);
+    }
+  });
+</script>
+</body>
+</html>
